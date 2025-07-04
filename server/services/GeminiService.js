@@ -1,64 +1,8 @@
-// Gemini AI Service - Placeholder implementation
-// In production, this would use the actual Gemini API
+import { GoogleGenAI } from "@google/genai";
+
 
 export class GeminiService {
-  static async generateResponse({ message, subject, learningRate, chatHistory, context }) {
-    // Placeholder implementation
-    // Replace with actual Gemini API call
-    
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '<INSERT_GEMINI_API_KEY_HERE>';
-    
-    if (GEMINI_API_KEY === '<INSERT_GEMINI_API_KEY_HERE>') {
-      // Return mock response for demo
-      return this.getMockResponse(message, subject, learningRate);
-    }
-
-    try {
-      // This is where you would make the actual API call to Gemini
-      // const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${GEMINI_API_KEY}`
-      //   },
-      //   body: JSON.stringify({
-      //     contents: [{
-      //       parts: [{
-      //         text: this.buildPrompt(message, subject, learningRate, chatHistory, context)
-      //       }]
-      //     }]
-      //   })
-      // });
-      
-      // For now, return mock response
-      return this.getMockResponse(message, subject, learningRate);
-    } catch (error) {
-      console.error('Gemini API error:', error);
-      throw new Error('Failed to generate AI response');
-    }
-  }
-
-  static async generateContent({ topic, difficulty, contentType, targetAudience }) {
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '<INSERT_GEMINI_API_KEY_HERE>';
-    
-    if (GEMINI_API_KEY === '<INSERT_GEMINI_API_KEY_HERE>') {
-      return this.getMockContent(topic, difficulty, contentType);
-    }
-
-    // Actual implementation would go here
-    return this.getMockContent(topic, difficulty, contentType);
-  }
-
-  static async analyzePerformance({ studentData, subject }) {
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '<INSERT_GEMINI_API_KEY_HERE>';
-    
-    if (GEMINI_API_KEY === '<INSERT_GEMINI_API_KEY_HERE>') {
-      return this.getMockAnalysis(studentData, subject);
-    }
-
-    // Actual implementation would go here
-    return this.getMockAnalysis(studentData, subject);
-  }
+  static genAI = new GoogleGenAI(process.env.GEMINI_API_KEY || '<INSERT_GEMINI_API_KEY_HERE>');
 
   static buildPrompt(message, subject, learningRate, chatHistory, context) {
     return `
@@ -81,73 +25,66 @@ export class GeminiService {
     `;
   }
 
-  // Mock responses for demo purposes
-  static getMockResponse(message, subject, learningRate) {
-    const responses = {
-      high: [
-        "Great question! Since you're doing well (learning rate: 88%), let's dive deeper. Here's the advanced concept...",
-        "Excellent progress! You're ready for more challenging material. Consider this advanced perspective...",
-        "Your strong performance allows us to explore complex applications. Here's how this connects to..."
-      ],
-      medium: [
-        "Good question! Let me explain this step by step with some examples...",
-        "I can see you're making steady progress. Here's a balanced explanation with practical examples...",
-        "This is a great learning opportunity. Let me break this down with clear examples..."
-      ],
-      low: [
-        "Don't worry, let's take this slowly and build your understanding step by step...",
-        "This is a common question! Let me explain this very clearly with simple examples...",
-        "Great that you're asking questions! Let's start with the basics and work our way up..."
-      ]
-    };
-
-    const level = learningRate > 80 ? 'high' : learningRate > 60 ? 'medium' : 'low';
-    const responsePool = responses[level];
-    
-    return responsePool[Math.floor(Math.random() * responsePool.length)] + 
-           ` The key concept about ${subject} is that it builds on fundamental principles. ` +
-           `Based on your current learning rate of ${learningRate}%, I've tailored this explanation to match your level.`;
+  static async generateResponse({ message, subject, learningRate, chatHistory, context }) {
+    try {
+      const model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
+      const prompt = this.buildPrompt(message, subject, learningRate, chatHistory, context);
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text();
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      throw new Error('Failed to generate AI response');
+    }
   }
 
-  static getMockContent(topic, difficulty, contentType) {
-    return {
-      title: `${contentType}: ${topic}`,
-      content: `This is AI-generated content about ${topic} at ${difficulty} level. ` +
-               `The content has been adapted for ${contentType} format and includes interactive elements.`,
-      exercises: [
-        `Practice problem 1 about ${topic}`,
-        `Practice problem 2 about ${topic}`,
-        `Challenge question about ${topic}`
-      ],
-      suggestedDuration: '30-45 minutes',
-      learningObjectives: [
-        `Understand core concepts of ${topic}`,
-        `Apply ${topic} principles to solve problems`,
-        `Analyze real-world applications of ${topic}`
-      ]
-    };
+  static async generateContent({ topic, difficulty, contentType, targetAudience }) {
+    try {
+      const model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
+      const prompt = `
+        Generate educational content for the following:
+        - Topic: ${topic}
+        - Difficulty Level: ${difficulty}
+        - Content Type: ${contentType}
+        - Target Audience: ${targetAudience}
+
+        Provide a title, main content, practice exercises, suggested duration, and learning objectives.
+        Format the output as a JSON object.
+      `;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      return JSON.parse(text);
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      throw new Error('Failed to generate content');
+    }
   }
 
-  static getMockAnalysis(studentData, subject) {
-    return {
-      overallPerformance: 'Good progress with room for improvement',
-      strenghts: [
-        `Strong understanding of basic ${subject} concepts`,
-        'Consistent engagement with course material',
-        'Good problem-solving approach'
-      ],
-      weaknesses: [
-        `Needs more practice with advanced ${subject} topics`,
-        'Could benefit from more interactive exercises',
-        'Occasional gaps in foundational knowledge'
-      ],
-      recommendations: [
-        `Focus on ${subject} practice problems`,
-        'Increase interaction with AI tutor',
-        'Review previous concepts before moving forward'
-      ],
-      predictedOutcome: 'With consistent effort, student should achieve B+ grade',
-      interventionNeeded: false
-    };
+  static async analyzePerformance({ studentData, subject }) {
+    try {
+      const model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
+      const prompt = `
+        Analyze the following student performance data for the subject: ${subject}.
+        Student Data: ${JSON.stringify(studentData)}
+
+        Provide an analysis that includes:
+        - Overall performance summary
+        - Key strengths
+        - Areas for improvement (weaknesses)
+        - Actionable recommendations
+        - A predicted outcome
+        - A boolean indicating if intervention is needed.
+
+        Format the output as a JSON object.
+      `;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      return JSON.parse(text);
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      throw new Error('Failed to analyze performance');
+    }
   }
 }

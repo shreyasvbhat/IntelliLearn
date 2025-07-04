@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { GeminiService } from '../services/GeminiService.js';
+import { User } from '../models/User.js';
 
 const router = express.Router();
 
@@ -10,8 +11,9 @@ router.post('/chat', authenticateToken, async (req, res) => {
     const { message, subject, context } = req.body;
     
     // Get user's learning rate and history (in real app, from database)
-    const learningRate = 75; // Mock data
-    const chatHistory = []; // Mock data
+    const user=req.user;
+    const learningRate = await User.findById(user.id).select('learningRate');
+    const chatHistory = [];
     
     const response = await GeminiService.generateResponse({
       message,

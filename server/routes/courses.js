@@ -1,18 +1,18 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
-import { Course, courses } from '../models/Course.js';
+import { Course } from '../models/Course.js';
 
 const router = express.Router();
 
 // Get all courses
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     let userCourses = [];
     
     if (req.user.role === 'teacher') {
-      userCourses = courses.filter(c => c.teacherId === req.user.userId);
+      userCourses = await Course.find({ teacherId: req.user.userId });
     } else if (req.user.role === 'student') {
-      userCourses = courses.filter(c => c.students.includes(req.user.userId));
+      userCourses = await Course.find({ students: req.user.userId });
     }
     
     res.json(userCourses);
@@ -22,7 +22,7 @@ router.get('/', authenticateToken, (req, res) => {
 });
 
 // Create course (teachers only)
-router.post('/', authenticateToken, (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
     if (req.user.role !== 'teacher') {
       return res.status(403).json({ error: 'Only teachers can create courses' });
@@ -35,7 +35,7 @@ router.post('/', authenticateToken, (req, res) => {
       teacherId: req.user.userId
     });
 
-    courses.push(course);
+    await course.save(); // Assuming you have a method to save the course
     res.status(201).json(course);
   } catch (error) {
     res.status(500).json({ error: 'Failed to create course' });
@@ -43,9 +43,9 @@ router.post('/', authenticateToken, (req, res) => {
 });
 
 // Get course by ID
-router.get('/:id', authenticateToken, (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const course = courses.find(c => c.id === req.params.id);
+    const course = await Course.findById(req.params.id);
     if (!course) {
       return res.status(404).json({ error: 'Course not found' });
     }

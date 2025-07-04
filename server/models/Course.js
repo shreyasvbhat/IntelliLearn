@@ -1,21 +1,34 @@
-// Course Model
-export class Course {
-  constructor(data) {
-    this.id = data.id || this.generateId();
-    this.title = data.title;
-    this.description = data.description;
-    this.teacherId = data.teacherId;
-    this.students = data.students || [];
-    this.content = data.content || [];
-    this.assignments = data.assignments || [];
-    this.createdAt = data.createdAt || new Date();
-    this.updatedAt = new Date();
-  }
+import mongoose from 'mongoose';
 
-  generateId() {
-    return Math.random().toString(36).substr(2, 9);
-  }
-}
+const { Schema } = mongoose;
 
-// Mock database
-export const courses = [];
+const courseSchema = new Schema({
+  title: { type: String, required: true },
+  description: { type: String },
+  teacherId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  students: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  content: [{ 
+    type: new Schema({
+      type: { type: String }, // e.g., 'video', 'article', etc.
+      value: { type: String },
+    }, { _id: false })
+  }],
+  assignments: [{ 
+    type: new Schema({
+      title: { type: String },
+      description: { type: String },
+      dueDate: { type: Date },
+    }, { _id: false })
+  }],
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+// Automatically update `updatedAt`
+courseSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
+});
+
+export const Course = mongoose.model('Course', courseSchema);
+

@@ -1,46 +1,48 @@
-// User Model - In a real app, this would be a database model
-export class User {
-  constructor(data) {
-    this.id = data.id || this.generateId();
-    this.email = data.email;
-    this.name = data.name;
-    this.password = data.password; // In real app, this would be hashed
-    this.role = data.role; // 'student', 'teacher', 'parent'
-    this.avatar = data.avatar;
-    this.preferences = data.preferences || {
-      darkMode: false,
-      notifications: true
-    };
-    this.createdAt = data.createdAt || new Date();
-    this.updatedAt = new Date();
-    
-    // Role-specific data
-    if (this.role === 'student') {
-      this.learningRate = data.learningRate || 50;
-      this.enrolledCourses = data.enrolledCourses || [];
-      this.achievements = data.achievements || [];
-      this.progress = data.progress || {};
-    }
-    
-    if (this.role === 'teacher') {
-      this.courses = data.courses || [];
-      this.students = data.students || [];
-    }
-    
-    if (this.role === 'parent') {
-      this.children = data.children || [];
-    }
-  }
+import mongoose from 'mongoose';
 
-  generateId() {
-    return Math.random().toString(36).substr(2, 9);
-  }
+const { Schema } = mongoose;
 
-  toJSON() {
-    const { password, ...userWithoutPassword } = this;
-    return userWithoutPassword;
-  }
-}
+const preferencesSchema = new Schema({
+  darkMode: { type: Boolean, default: false },
+  notifications: { type: Boolean, default: true },
+}, { _id: false });
 
-// Mock database
-export const users = [];
+const userSchema = new Schema({
+  email: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  password: { type: String, required: true }, // In real app, hash before save
+  role: { type: String, enum: ['student', 'teacher', 'parent'], required: true },
+  avatar: { type: String },
+  preferences: { type: preferencesSchema, default: () => ({}) },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+
+  // Student fields
+  learningRate: { type: Number, default: 50 },
+  enrolledCourses: [{ type: Schema.Types.ObjectId, ref: 'Course' }],
+  achievements: [{ type: String }],
+  progress: { type: Schema.Types.Mixed, default: {} },
+
+  // Teacher fields
+  courses: [{ type: Schema.Types.ObjectId, ref: 'Course' }],
+  students: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+
+  // Parent fields
+  children: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+});
+
+// Automatically update `updatedAt`
+userSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
+});
+
+// Remove password when converting to JSON
+userSchema.methods.toJSON = function() {
+  const obj = this.toObject();
+  delete obj.password;
+  return obj;
+};
+
+export const User = mongoose.model('User', userSchema);
+

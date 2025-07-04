@@ -1,13 +1,13 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
-import { users } from '../models/User.js';
+import { User } from '../models/User.js';
 
 const router = express.Router();
 
 // Get user profile
-router.get('/profile', authenticateToken, (req, res) => {
+router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const user = users.find(u => u.id === req.user.userId);
+    const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -18,39 +18,40 @@ router.get('/profile', authenticateToken, (req, res) => {
 });
 
 // Update user profile
-router.put('/profile', authenticateToken, (req, res) => {
+router.put('/profile', authenticateToken, async (req, res) => {
   try {
-    const userIndex = users.findIndex(u => u.id === req.user.userId);
-    if (userIndex === -1) {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const { name, preferences } = req.body;
-    users[userIndex] = {
-      ...users[userIndex],
-      name: name || users[userIndex].name,
-      preferences: { ...users[userIndex].preferences, ...preferences },
-      updatedAt: new Date()
-    };
+    user.name = name || user.name;
+    user.preferences = { ...user.preferences, ...preferences };
+    user.updatedAt = new Date();
+
+    await user.save();
 
     res.json({
       message: 'Profile updated successfully',
-      user: users[userIndex].toJSON()
+      user: user.toJSON()
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 
+
+
 // Get students (for teachers)
-router.get('/students', authenticateToken, (req, res) => {
+router.get('/students', authenticateToken, async (req, res) => {
   try {
     if (req.user.role !== 'teacher') {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const students = users.filter(u => u.role === 'student').map(user => user.toJSON());
-    res.json(students);
+    const students = await User.find({ role: 'student' });
+    res.json(students.map(student => student.toJSON()));
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch students' });
   }

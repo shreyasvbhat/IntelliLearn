@@ -1,7 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { User, users } from '../models/User.js';
+import { User } from '../models/User.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -12,7 +12,7 @@ router.post('/register', async (req, res) => {
     const { name, email, password, role } = req.body;
 
     // Check if user already exists
-    const existingUser = users.find(u => u.email === email);
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
@@ -29,7 +29,7 @@ router.post('/register', async (req, res) => {
       avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${email}`
     });
 
-    users.push(user);
+    await user.save();
 
     // Generate JWT
     const token = jwt.sign(
@@ -55,7 +55,7 @@ router.post('/login', async (req, res) => {
     const { email, password, role } = req.body;
 
     // Find user
-    const user = users.find(u => u.email === email && u.role === role);
+    const user = await User.findOne({ email, role });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -85,7 +85,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Verify token
-router.get('/verify', (req, res) => {
+router.get('/verify', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
@@ -93,7 +93,7 @@ router.get('/verify', (req, res) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = users.find(u => u.id === decoded.userId);
+    const user = await User.findById(decoded.userId);
     
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
