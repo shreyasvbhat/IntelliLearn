@@ -10,9 +10,9 @@ router.get('/', authenticateToken, async (req, res) => {
     let userCourses = [];
     
     if (req.user.role === 'teacher') {
-      userCourses = await Course.find({ teacherId: req.user.userId });
+      userCourses = await Course.find({ teacherId: req.user._id });
     } else if (req.user.role === 'student') {
-      userCourses = await Course.find({ students: req.user.userId });
+      userCourses = await Course.find({ students: req.user._id });
     }
     
     res.json(userCourses);
@@ -32,7 +32,7 @@ router.post('/', authenticateToken, async (req, res) => {
     const course = new Course({
       title,
       description,
-      teacherId: req.user.userId
+      teacherId: req.user._id
     });
 
     await course.save(); // Assuming you have a method to save the course
@@ -52,8 +52,8 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
     // Check if user has access to this course
     const hasAccess = 
-      req.user.role === 'teacher' && course.teacherId === req.user.userId ||
-      req.user.role === 'student' && course.students.includes(req.user.userId);
+      req.user.role === 'teacher' && course.teacherId === req.user._id ||
+      req.user.role === 'student' && course.students.includes(req.user._id);
 
     if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
@@ -62,6 +62,93 @@ router.get('/:id', authenticateToken, async (req, res) => {
     res.json(course);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch course' });
+  }
+});
+//submit assignments
+router.post('/:courseId/assignments/:assignmentId/submit', authenticateToken, async (req, res) => {
+  try {
+    const { courseId, assignmentId } = req.params;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    // Check student access
+    if (req.user.role !== 'student' || !course.students.includes(req.user._id)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Find assignment
+    const assignment = course.assignments.id(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ error: 'Assignment not found' });
+    }
+
+    // Update assignment submission details
+    assignment.status = 'submitted';
+    assignment.submittedDate = new Date();
+    assignment.attempts = (assignment.attempts || 0) + 1;
+
+    await course.save();
+
+    res.json({ message: 'Assignment submitted successfully', assignment });
+  } catch (error) {
+    console.error('Submit assignment error:', error);
+    res.status(500).json({ error: 'Failed to submit assignment' });
+  }
+});
+
+router.post('/:id/add-student', authenticateToken, async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    const { studentId } = req.body;
+
+    // Only teachers can add students
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ error: 'Course not found' });
+
+    if (course.teacherId.toString() !== req.user._id.toString())
+      return res.status(403).json({ error: 'Only the course teacher can add students' });
+
+    if (!course.students.includes(studentId)) {
+      course.students.push(studentId);
+      await course.save();
+    }
+
+    res.json({ message: 'Student added successfully', course });
+  } catch (error) {
+    console.error('Error adding student:', error);
+    res.status(500).json({ error: 'Failed to add student' });
+  }
+});
+
+// Add assignment to course
+router.post('/:id/add-assignment', authenticateToken, async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    const { title, description, dueDate, points } = req.body;
+
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ error: 'Course not found' });
+
+    if (course.teacherId.toString() !== req.user._id.toString())
+      return res.status(403).json({ error: 'Only the course teacher can add assignments' });
+
+    const newAssignment = {
+      title,
+      description,
+      dueDate,
+      points
+    };
+
+    course.assignments.push(newAssignment);
+    await course.save();
+
+    res.json({ message: 'Assignment added successfully', course });
+  } catch (error) {
+    console.error('Error adding assignment:', error);
+    res.status(500).json({ error: 'Failed to add assignment' });
   }
 });
 

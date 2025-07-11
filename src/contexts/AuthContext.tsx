@@ -1,7 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import * as API from '../api/APICalls';
 
 interface User {
+  children: boolean;
+  enrolledCourses: any;
+  _id: any;
   id: string;
   email: string;
   name: string;
@@ -15,10 +19,10 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role: string) => Promise<boolean>;
-  register: (userData: any) => Promise<boolean>;
+  login: (email: string, password: string, role: 'student' | 'teacher') => Promise<boolean>;
+  register: (userData: Partial<User> & { password: string }) => Promise<boolean>;
   logout: () => void;
-  updateUser: (userData: Partial<User>) => void;
+  updateUser: (userData: Partial<User>) => Promise<void>;
   loading: boolean;
 }
 
@@ -36,80 +40,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Check token and fetch user on mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (token && userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+    const initializeAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const res = await API.verifyToken();
+          setUser(res.user);
+        } catch (error) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+    initializeAuth();
   }, []);
 
-  const login = async (email: string, password: string, role: string): Promise<boolean> => {
+  const login = async (email: string, password: string, role: 'student' | 'teacher'): Promise<boolean> => {
     try {
       setLoading(true);
-      
-      // Simulate API call
-      const mockUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
-        email,
-        name: email.split('@')[0],
-        role: role as 'student' | 'teacher' | 'parent',
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${email}`,
-        preferences: {
-          darkMode: false,
-          notifications: true
-        }
-      };
-
-      const mockToken = 'mock-jwt-token-' + Math.random().toString(36);
-      
-      localStorage.setItem('token', mockToken);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
-      toast.success(`Welcome back, ${mockUser.name}!`);
+      const res = await API.login({ email, password, role });
+      localStorage.setItem('token', res.token);
+      localStorage.setItem('user', JSON.stringify(res.user));
+      setUser(res.user);
+      toast.success(`Welcome back, ${res.user.name}!`);
       return true;
     } catch (error) {
-      toast.error('Login failed. Please try again.');
+      console.error(error);
+      toast.error('Login failed. Please check your credentials.');
       return false;
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (userData: any): Promise<boolean> => {
+  const register = async (userData: Partial<User> & { password: string }): Promise<boolean> => {
     try {
       setLoading(true);
-      
-      // Simulate API call
-      const newUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
-        email: userData.email,
+      // Ensure required fields are present
+      if (!userData.name || !userData.email || !userData.role) {
+        toast.error('Please provide name, email, and role.');
+        setLoading(false);
+        return false;
+      }
+      if (userData.role !== 'student' && userData.role !== 'teacher') {
+        toast.error('Registration is only allowed for students and teachers.');
+        setLoading(false);
+        return false;
+      }
+      const payload = {
         name: userData.name,
-        role: userData.role,
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${userData.email}`,
-        preferences: {
-          darkMode: false,
-          notifications: true
-        }
+        email: userData.email,
+        password: userData.password,
+        role: userData.role as 'student' | 'teacher',
       };
-
-      const mockToken = 'mock-jwt-token-' + Math.random().toString(36);
-      
-      localStorage.setItem('token', mockToken);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      setUser(newUser);
-      
-      toast.success(`Account created successfully! Welcome, ${newUser.name}!`);
+      const res = await API.register(payload);
+      localStorage.setItem('token', res.token);
+      localStorage.setItem('user', JSON.stringify(res.user));
+      setUser(res.user);
+      toast.success(`Account created! Welcome, ${res.user.name}!`);
       return true;
     } catch (error) {
+      console.error(error);
       toast.error('Registration failed. Please try again.');
       return false;
     } finally {
@@ -124,11 +119,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success('Logged out successfully');
   };
 
-  const updateUser = (userData: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...userData };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+  const updateUser = async (userData: Partial<User>) => {
+    try {
+      setLoading(true);
+      const res = await API.updateProfile(userData);
+      localStorage.setItem('user', JSON.stringify(res.user));
+      setUser(res.user);
+      toast.success('Profile updated');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to update profile');
+    } finally {
+      setLoading(false);
     }
   };
 

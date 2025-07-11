@@ -1,33 +1,34 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Brain, 
-  Send, 
-  Mic, 
-  Image, 
-  BookOpen,
-  TrendingUp,
-  Lightbulb,
-  Target,
-  Clock,
-  Star
+import {
+  Brain, Send, Mic, Image, BookOpen, TrendingUp, Lightbulb, Clock
 } from 'lucide-react';
 import Card from '../../components/UI/Card';
 import Button from '../../components/UI/Button';
+import * as API from '../../api/APICalls';
+import { useAuth } from '../../contexts/AuthContext';
 
 const AITutor: React.FC = () => {
-  const [messages, setMessages] = useState([
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<any[]>([
     {
       id: 1,
       type: 'ai',
-      content: "Hello! I'm Ilm, your AI tutor. I'm here to help you learn and understand any topic. Based on your learning rate of 88%, I'll adapt my explanations to match your level. What would you like to learn about today?",
-      timestamp: new Date(Date.now() - 5000),
+      content: `Hello! I'm Ilm, your AI tutor. I'm here to help you learn and understand any topic. Based on your learning rate of 88%, I'll adapt my explanations to match your level. What would you like to learn about today?`,
+      timestamp: new Date(),
       subject: null
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('general');
   const [isTyping, setIsTyping] = useState(false);
+  const [learningStats, setLearningStats] = useState({
+    learningRate: 88,
+    questionsAsked: 0,
+    topicsLearned: 0,
+    studyStreak: 0
+  });
+  const [recentTopics, setRecentTopics] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const subjects = [
@@ -49,77 +50,62 @@ const AITutor: React.FC = () => {
     "What is the periodic table?"
   ];
 
-  const learningStats = {
-    learningRate: 88,
-    questionsAsked: 156,
-    topicsLearned: 42,
-    studyStreak: 15
-  };
-
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+  if (!inputMessage.trim()) return;
 
-    const userMessage = {
-      id: Date.now(),
-      type: 'user' as const,
-      content: inputMessage,
+  const userMessage = {
+    id: Date.now(),
+    type: 'user',
+    content: inputMessage,
+    timestamp: new Date(),
+    subject: selectedSubject
+  };
+
+  setMessages(prev => [...prev, userMessage]);
+  setInputMessage('');
+  setIsTyping(true);
+
+  try {
+    const res = await API.chatWithAI(
+      inputMessage,
+      selectedSubject,
+      {
+        message: inputMessage,
+        subject: selectedSubject,
+        context: ''
+      }
+    );
+    console.log('AI Response:', res);
+    const aiResponse = {
+      id: Date.now() + 1,
+      type: 'ai',
+      content: res.response,
       timestamp: new Date(),
       subject: selectedSubject
     };
+    setMessages(prev => [...prev, aiResponse]);
+    setIsTyping(false);
 
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
-    setIsTyping(true);
+    // Removed fetchLearningStats(); since no API route exists
+  } catch (error) {
+    console.error('Error fetching AI response:', error);
+    setIsTyping(false);
+  }
+};
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = {
-        id: Date.now() + 1,
-        type: 'ai' as const,
-        content: generateAIResponse(inputMessage, selectedSubject),
-        timestamp: new Date(),
-        subject: selectedSubject
-      };
-      setMessages(prev => [...prev, aiResponse]);
-      setIsTyping(false);
-    }, 2000);
-  };
+const handleQuickQuestion = (question: string) => {
+  setInputMessage(question);
+};
 
-  const generateAIResponse = (question: string, subject: string) => {
-    const responses = {
-      mathematics: [
-        "Great question! Since your learning rate is 88%, I'll provide a comprehensive explanation. Let me break this down step by step...",
-        "Excellent! You're ready for advanced concepts. Here's how we can approach this problem...",
-        "Perfect timing for this question! Based on your strong performance, let's dive deeper into this topic..."
-      ],
-      physics: [
-        "Fascinating physics question! Given your high learning rate, I can explain this with some advanced applications...",
-        "This is a fundamental concept in physics. Let me explain it in a way that builds on your strong foundation...",
-        "Great observation! Your analytical skills are developing well. Here's the detailed explanation..."
-      ],
-      general: [
-        "That's an excellent question! Based on your learning pattern, I'll provide a detailed explanation...",
-        "I can see you're thinking critically about this topic. Let me help you understand it better...",
-        "Perfect question for your current level! Here's a comprehensive answer..."
-      ]
-    };
-
-    const subjectResponses = responses[subject as keyof typeof responses] || responses.general;
-    return subjectResponses[Math.floor(Math.random() * subjectResponses.length)] + 
-           " This connects to several other concepts we've discussed. Would you like me to elaborate on any specific aspect?";
-  };
-
-  const handleQuickQuestion = (question: string) => {
-    setInputMessage(question);
-  };
 
   return (
     <div className="space-y-6">
@@ -182,7 +168,6 @@ const AITutor: React.FC = () => {
                   </div>
                 </motion.div>
               ))}
-              
               {isTyping && (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -318,14 +303,14 @@ const AITutor: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Topics</h3>
             </div>
             <div className="space-y-2">
-              {['Calculus Integration', 'Photosynthesis', 'Newton\'s Laws', 'Essay Writing'].map((topic, index) => (
+              {recentTopics.length ? recentTopics.map((topic, index) => (
                 <button
                   key={index}
                   className="w-full text-left p-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   {topic}
                 </button>
-              ))}
+              )) : <p className="text-sm text-gray-500 dark:text-gray-400">No recent topics yet.</p>}
             </div>
           </Card>
         </div>

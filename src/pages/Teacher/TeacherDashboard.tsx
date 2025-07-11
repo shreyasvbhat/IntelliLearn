@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, 
@@ -12,28 +12,59 @@ import {
 } from 'lucide-react';
 import Card from '../../components/UI/Card';
 import ProgressChart from '../../components/Charts/ProgressChart';
+import * as API from '../../api/APICalls' // adjust path if needed
 
 const TeacherDashboard: React.FC = () => {
-  const classData = [
-    { name: 'Class A', progress: 78, engagement: 85 },
-    { name: 'Class B', progress: 72, engagement: 80 },
-    { name: 'Class C', progress: 85, engagement: 90 },
-    { name: 'Class D', progress: 70, engagement: 75 },
-    { name: 'Class E', progress: 82, engagement: 88 },
-    { name: 'Class F', progress: 76, engagement: 82 }
-  ];
+  const [students, setStudents] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [classData, setClassData] = useState<any[]>([]);
+  const [strugglingStudents, setStrugglingStudents] = useState<any[]>([]);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
 
-  const strugglingStudents = [
-    { id: 1, name: 'Alice Johnson', subject: 'Mathematics', score: 45, trend: 'down' },
-    { id: 2, name: 'Bob Smith', subject: 'Physics', score: 52, trend: 'stable' },
-    { id: 3, name: 'Carol Davis', subject: 'Chemistry', score: 48, trend: 'down' }
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const studentsRes = await API.getStudents();
+        const coursesRes = await API.getCourses();
 
-  const recentActivities = [
-    { id: 1, type: 'assignment', title: 'Calculus Assignment Due', time: '2 hours ago' },
-    { id: 2, type: 'question', title: 'Student asked about integration', time: '4 hours ago' },
-    { id: 3, type: 'content', title: 'New AI content generated', time: '1 day ago' }
-  ];
+        setStudents(studentsRes);
+        setCourses(coursesRes);
+
+        // Example: create fake "class data" stats based on courses
+        // const generatedClassData = coursesRes.map((course: any) => ({
+        //   name: course.title,
+        //   progress: Math.floor(Math.random() * 30) + 70, // 70-100%
+        //   engagement: Math.floor(Math.random() * 20) + 75, // 75-95%
+        // }));
+        // setClassData(generatedClassData);
+
+        // Example: simulate students needing attention
+        // const struggling = studentsRes
+        //   .filter((_s: any, i: number) => i < 3) // just pick first 3 for demo
+        //   .map((s: any) => ({
+        //     id: s._id,
+        //     name: s.name,
+        //     subject: coursesRes[Math.floor(Math.random() * coursesRes.length)]?.title || 'Mathematics',
+        //     score: Math.floor(Math.random() * 30) + 45, // 45-75%
+        //     trend: Math.random() > 0.5 ? 'down' : 'stable',
+        //   }));
+        //setStrugglingStudents(struggling);
+
+        // Example: simulate recent activities
+        const activities = [
+          { id: 1, type: 'assignment', title: 'New Assignment Created', time: '2 hours ago' },
+          { id: 2, type: 'question', title: 'Student asked a question', time: '4 hours ago' },
+          { id: 3, type: 'content', title: 'AI content generated', time: '1 day ago' },
+        ];
+        setRecentActivities(activities);
+
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -48,11 +79,11 @@ const TeacherDashboard: React.FC = () => {
         <div className="mt-4 flex items-center space-x-6">
           <div className="flex items-center space-x-2">
             <Users className="w-5 h-5" />
-            <span>142 Active Students</span>
+            <span>{students.length} Active Students</span>
           </div>
           <div className="flex items-center space-x-2">
             <BookOpen className="w-5 h-5" />
-            <span>6 Active Courses</span>
+            <span>{courses.length} Active Courses</span>
           </div>
         </div>
       </motion.div>
@@ -63,7 +94,7 @@ const TeacherDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">Total Students</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">142</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{students.length}</p>
             </div>
             <Users className="w-8 h-8 text-blue-500" />
           </div>
@@ -73,7 +104,7 @@ const TeacherDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">Active Courses</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">6</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{courses.length}</p>
             </div>
             <BookOpen className="w-8 h-8 text-green-500" />
           </div>
@@ -93,7 +124,7 @@ const TeacherDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">Need Attention</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">8</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{strugglingStudents.length}</p>
             </div>
             <AlertTriangle className="w-8 h-8 text-red-500" />
           </div>
@@ -151,7 +182,7 @@ const TeacherDashboard: React.FC = () => {
           <div className="space-y-3">
             <div className="bg-purple-50 dark:bg-purple-900/50 p-3 rounded-lg">
               <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-                Ilm has generated new content for struggling students in Mathematics.
+                Ilm has generated new content for struggling students.
               </p>
               <div className="flex space-x-2">
                 <button className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700">

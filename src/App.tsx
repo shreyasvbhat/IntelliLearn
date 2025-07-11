@@ -25,6 +25,9 @@ import MyClasses from './pages/Teacher/MyClasses';
 import Profile from './pages/Shared/Profile';
 import Messages from './pages/Shared/Messages';
 import Notifications from './pages/Shared/Notifications';
+import Analytics from './pages/Teacher/Analytics';
+import AIContent from './pages/Teacher/AIContent';
+import CourseManagement from './pages/Teacher/CourseManagement';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -83,9 +86,9 @@ const DashboardRouter: React.FC = () => {
         {user?.role === 'teacher' && (
           <>
             <Route path="/my-classes" element={<MyClasses />} />
-            <Route path="/course-management" element={<div className="p-6"><h1 className="text-2xl font-bold">Course Management (Coming Soon)</h1></div>} />
-            <Route path="/analytics" element={<div className="p-6"><h1 className="text-2xl font-bold">Analytics (Coming Soon)</h1></div>} />
-            <Route path="/ai-content" element={<div className="p-6"><h1 className="text-2xl font-bold">AI Content Generation (Coming Soon)</h1></div>} />
+            <Route path="/course-management" element={<CourseManagement />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/ai-content" element={<AIContent />} />
           </>
         )}
         

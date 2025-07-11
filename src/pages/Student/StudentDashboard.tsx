@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   BookOpen, 
@@ -12,29 +12,45 @@ import {
 } from 'lucide-react';
 import Card from '../../components/UI/Card';
 import ProgressChart from '../../components/Charts/ProgressChart';
+import * as API from '../../api/APICalls'; // adjust if your import path differs
 
 const StudentDashboard: React.FC = () => {
-  // Mock data
-  const progressData = [
-    { name: 'Week 1', progress: 65, engagement: 75 },
-    { name: 'Week 2', progress: 72, engagement: 80 },
-    { name: 'Week 3', progress: 78, engagement: 85 },
-    { name: 'Week 4', progress: 85, engagement: 90 },
-    { name: 'Week 5', progress: 88, engagement: 88 },
-    { name: 'Week 6', progress: 92, engagement: 95 }
-  ];
+  const [profile, setProfile] = useState<any>(null);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [progressData, setProgressData] = useState<any[]>([]);
+  const [achievements, setAchievements] = useState<any[]>([]);
 
-  const recentCourses = [
-    { id: 1, title: 'Advanced Mathematics', progress: 75, nextClass: '2024-01-15T10:00' },
-    { id: 2, title: 'Physics Fundamentals', progress: 60, nextClass: '2024-01-15T14:00' },
-    { id: 3, title: 'English Literature', progress: 85, nextClass: '2024-01-16T09:00' }
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const profileRes = await API.getProfile();
+        setProfile(profileRes);
 
-  const achievements = [
-    { id: 1, title: 'Math Wizard', description: 'Completed 50 math problems', icon: '🧮' },
-    { id: 2, title: 'Quick Learner', description: 'Learning rate above 85', icon: '⚡' },
-    { id: 3, title: 'Consistent Student', description: '7 days streak', icon: '🔥' }
-  ];
+        const coursesRes = await API.getCourses();
+        setCourses(coursesRes);
+
+        // Example: generate progress data using courses
+        const generatedProgress = coursesRes.slice(0, 6).map((c: any, i: number) => ({
+          name: `Week ${i + 1}`,
+          progress: Math.min(60 + i * 5, 100), // simulate progress
+          engagement: Math.min(70 + i * 4, 100)
+        }));
+        setProgressData(generatedProgress);
+
+        // Example: simulate achievements
+        const simulatedAchievements = [
+          { id: 1, title: 'Math Wizard', description: 'Completed 50 math problems', icon: '🧮' },
+          { id: 2, title: 'Quick Learner', description: 'Learning rate above 85', icon: '⚡' },
+          { id: 3, title: 'Consistent Student', description: '7 days streak', icon: '🔥' }
+        ];
+        setAchievements(simulatedAchievements);
+      } catch (error) {
+        console.error('Error loading student dashboard:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -44,16 +60,16 @@ const StudentDashboard: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white"
       >
-        <h1 className="text-2xl font-bold mb-2">Welcome back, Student!</h1>
+        <h1 className="text-2xl font-bold mb-2">Welcome back, {profile?.name || 'Student'}!</h1>
         <p className="text-blue-100">Ready to continue your learning journey?</p>
         <div className="mt-4 flex items-center space-x-6">
           <div className="flex items-center space-x-2">
             <Target className="w-5 h-5" />
-            <span>Learning Rate: 88%</span>
+            <span>Learning Rate: {profile?.preferences?.learningRate || 88}%</span>
           </div>
           <div className="flex items-center space-x-2">
             <Award className="w-5 h-5" />
-            <span>3 Badges Earned</span>
+            <span>{achievements.length} Badges Earned</span>
           </div>
         </div>
       </motion.div>
@@ -64,7 +80,7 @@ const StudentDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">Active Courses</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">6</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{courses.length}</p>
             </div>
             <BookOpen className="w-8 h-8 text-blue-500" />
           </div>
@@ -94,7 +110,7 @@ const StudentDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">Learning Rate</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">88%</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{profile?.preferences?.learningRate || 88}%</p>
             </div>
             <Brain className="w-8 h-8 text-orange-500" />
           </div>
@@ -121,24 +137,24 @@ const StudentDashboard: React.FC = () => {
             </button>
           </div>
           <div className="space-y-4">
-            {recentCourses.map((course) => (
-              <div key={course.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            {courses.slice(0, 3).map((course) => (
+              <div key={course._id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div className="flex-1">
                   <h4 className="font-medium text-gray-900 dark:text-white">{course.title}</h4>
                   <div className="flex items-center mt-1">
                     <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mr-3">
                       <div 
                         className="bg-blue-500 h-2 rounded-full" 
-                        style={{ width: `${course.progress}%` }}
+                        style={{ width: `${Math.min(60 + Math.random() * 30, 100)}%` }}
                       ></div>
                     </div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{course.progress}%</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Progress</span>
                   </div>
                 </div>
                 <div className="ml-4 text-right">
                   <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                     <Calendar className="w-4 h-4 mr-1" />
-                    <span>Next: {new Date(course.nextClass).toLocaleDateString()}</span>
+                    <span>Next: {new Date().toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
@@ -161,7 +177,7 @@ const StudentDashboard: React.FC = () => {
             <div className="bg-blue-50 dark:bg-blue-900/50 p-3 rounded-lg">
               <p className="text-sm text-gray-700 dark:text-gray-300">
                 "Based on your recent progress, I recommend focusing on calculus integration problems. 
-                Your learning rate of 88% suggests you're ready for more challenging concepts!"
+                Your learning rate of {profile?.preferences?.learningRate || 88}% suggests you're ready for more challenging concepts!"
               </p>
             </div>
             <button className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">

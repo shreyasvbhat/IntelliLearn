@@ -29,7 +29,10 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      const success = await register(formData);
+      const success = await register({
+        ...formData,
+        role: formData.role as "student" | "teacher" | "parent"
+      });
       if (success) {
         navigate('/dashboard');
       }

@@ -7,7 +7,11 @@ import Button from '../../components/UI/Button';
 import { toast } from 'react-hot-toast';
 
 const Login: React.FC = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    email: string;
+    password: string;
+    role: 'student' | 'teacher';
+  }>({
     email: '',
     password: '',
     role: 'student'
@@ -15,6 +19,11 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const roles = [
+    { value: 'student', label: 'Student', description: 'Access courses and track progress' },
+    { value: 'teacher', label: 'Teacher', description: 'Manage classes and create content' }
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,12 +40,6 @@ const Login: React.FC = () => {
       setLoading(false);
     }
   };
-
-  const roles = [
-    { value: 'student', label: 'Student', description: 'Access courses and track progress' },
-    { value: 'teacher', label: 'Teacher', description: 'Manage classes and create content' },
-    { value: 'parent', label: 'Parent', description: 'Monitor child\'s progress' }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
@@ -85,8 +88,7 @@ const Login: React.FC = () => {
                       name="role"
                       value={role.value}
                       checked={formData.role === role.value}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                      className="sr-only"
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as 'student' | 'teacher' })}
                     />
                     <User className="w-5 h-5 text-gray-500 mr-3" />
                     <div>

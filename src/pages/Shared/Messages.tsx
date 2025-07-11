@@ -20,347 +20,147 @@ import {
 import Card from '../../components/UI/Card';
 import Button from '../../components/UI/Button';
 import { useAuth } from '../../contexts/AuthContext';
-
+import * as API from '../../api/APICalls';
 const Messages: React.FC = () => {
   const { user } = useAuth();
-  const [selectedChat, setSelectedChat] = useState<number | null>(1);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [selectedChat, setSelectedChat] = useState<any | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Role-specific conversations
-  const getConversations = () => {
-    switch (user?.role) {
-      case 'student':
-        return [
-          {
-            id: 1,
-            name: 'Dr. Sarah Johnson',
-            role: 'Mathematics Teacher',
-            avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Sarah Johnson',
-            lastMessage: 'Great work on your calculus assignment!',
-            timestamp: '2 min ago',
-            unread: 2,
-            online: true,
-            type: 'teacher'
-          },
-          {
-            id: 2,
-            name: 'Study Group - Physics',
-            role: '5 members',
-            avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Physics Group',
-            lastMessage: 'Alex: Can someone explain Newton\'s third law?',
-            timestamp: '15 min ago',
-            unread: 0,
-            online: false,
-            type: 'group'
-          },
-          {
-            id: 3,
-            name: 'Prof. Michael Smith',
-            role: 'Physics Teacher',
-            avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Michael Smith',
-            lastMessage: 'Lab report deadline extended to Friday',
-            timestamp: '1 hour ago',
-            unread: 1,
-            online: false,
-            type: 'teacher'
-          },
-          {
-            id: 4,
-            name: 'Emma Thompson',
-            role: 'Classmate',
-            avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Emma Thompson',
-            lastMessage: 'Thanks for helping with the chemistry homework!',
-            timestamp: '2 hours ago',
-            unread: 0,
-            online: true,
-            type: 'student'
-          }
-        ];
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        if (!user) return;
 
-      case 'teacher':
-        return [
-          {
-            id: 1,
-            name: 'Mathematics Class - Grade 12',
-            role: '28 students',
-            avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Math Class',
-            lastMessage: 'Assignment reminder sent to all students',
-            timestamp: '5 min ago',
-            unread: 3,
-            online: false,
-            type: 'class'
-          },
-          {
-            id: 2,
-            name: 'Alex Chen',
-            role: 'Student - Grade 12',
-            avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Alex Chen',
-            lastMessage: 'Could you explain the integration by parts method?',
-            timestamp: '20 min ago',
-            unread: 1,
-            online: true,
-            type: 'student'
-          },
-          {
-            id: 3,
-            name: 'Mrs. Patricia Wilson',
-            role: 'Parent of Emma Wilson',
-            avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Patricia Wilson',
-            lastMessage: 'Thank you for the progress update on Emma',
-            timestamp: '1 hour ago',
-            unread: 0,
-            online: false,
-            type: 'parent'
-          },
-          {
-            id: 4,
-            name: 'Physics Department',
-            role: 'Faculty Group',
-            avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Physics Dept',
-            lastMessage: 'New curriculum guidelines available',
-            timestamp: '3 hours ago',
-            unread: 2,
-            online: false,
-            type: 'faculty'
-          },
-          {
-            id: 5,
-            name: 'Sarah Johnson',
-            role: 'Student - Grade 11',
-            avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Sarah Johnson Student',
-            lastMessage: 'I\'m struggling with the physics concepts',
-            timestamp: '5 hours ago',
-            unread: 0,
-            online: true,
-            type: 'student'
-          }
-        ];
+        let convos: any[] = [];
 
-      case 'parent':
-        return [
-          {
-            id: 1,
-            name: 'Dr. Sarah Johnson',
-            role: 'Alex\'s Mathematics Teacher',
-            avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Sarah Johnson Teacher',
-            lastMessage: 'Alex is showing excellent progress in calculus',
-            timestamp: '1 hour ago',
-            unread: 1,
-            online: true,
-            type: 'teacher'
-          },
-          {
-            id: 2,
-            name: 'Prof. Michael Smith',
-            role: 'Alex\'s Physics Teacher',
-            avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Michael Smith Teacher',
-            lastMessage: 'Please review Alex\'s lab report performance',
-            timestamp: '3 hours ago',
-            unread: 2,
-            online: false,
-            type: 'teacher'
-          },
-          {
-            id: 3,
-            name: 'School Administration',
-            role: 'Lincoln High School',
-            avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=School Admin',
-            lastMessage: 'Parent-teacher conference scheduled for next week',
-            timestamp: '1 day ago',
-            unread: 0,
-            online: false,
-            type: 'admin'
-          },
-          {
-            id: 4,
-            name: 'Mrs. Emily Davis',
-            role: 'Alex\'s English Teacher',
-            avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Emily Davis Teacher',
-            lastMessage: 'Alex\'s essay writing has improved significantly',
-            timestamp: '2 days ago',
-            unread: 0,
-            online: true,
-            type: 'teacher'
-          }
-        ];
+        if (user.role === 'parent') {
+          const parentProfile = await API.getProfile();
+          const childrenIds = parentProfile.children || [];
 
-      default:
-        return [];
+          if (childrenIds.length > 0) {
+            const allStudents = await API.getAllStudents();
+            const child = allStudents.find((s:any) => s._id === childrenIds[0]);
+
+            if (child && child.enrolledCourses.length > 0) {
+              const allCourses = await API.getAllCourses();
+
+              const childCourses = allCourses.filter((course: any) => 
+                child.enrolledCourses.includes(course._id)
+              );
+
+              // For each course, find teacher
+              const teacherConvos = childCourses.map((course:any) => ({
+                id: course.teacherId?._id || course.teacherId,
+                name: course.teacherId?.name || "Teacher",
+                role: 'Teacher',
+                avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${course.title}`,
+                lastMessage: `Discuss about ${course.title}`,
+                timestamp: 'Recently',
+                unread: 0,
+                online: true,
+                type: 'teacher',
+              }));
+
+              convos = teacherConvos;
+            }
+          }
+        } else if (user.role === 'student') {
+          const studentProfile = await API.getProfile();
+
+          if (studentProfile.enrolledCourses.length > 0) {
+            const allCourses = await API.getAllCourses();
+
+            const studentCourses = allCourses.filter((course: { _id: any; }) => 
+              studentProfile.enrolledCourses.includes(course._id)
+            );
+
+            const teacherConvos = studentCourses.map((course: { teacherId: any; title: any; }) => ({
+              id: course.teacherId?._id || course.teacherId,
+              name: course.teacherId?.name || "Teacher",
+              role: 'Teacher',
+              avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${course.title}`,
+              lastMessage: `Discuss about ${course.title}`,
+              timestamp: 'Recently',
+              unread: 0,
+              online: true,
+              type: 'teacher',
+            }));
+
+            convos = teacherConvos;
+          }
+        } else if (user.role === 'teacher') {
+          const teacherProfile = await API.getProfile();
+          const allStudents = await API.getAllStudents();
+          const allCourses = await API.getAllCourses();
+
+          // Find courses taught by this teacher
+          const myCourses = allCourses.filter((course: { teacherId: { _id: any; }; }) => 
+            course.teacherId === teacherProfile._id || course.teacherId?._id === teacherProfile._id
+          );
+
+          // Find students enrolled in these courses
+          const studentConvos = allStudents
+            .filter((student: { enrolledCourses: any[]; }) => 
+              student.enrolledCourses.some((courseId: any) => myCourses.map((c: { _id: any; }) => c._id).includes(courseId))
+            )
+            .map((student: { _id: any; name: any; }) => ({
+              id: student._id,
+              name: student.name,
+              role: 'Student',
+              avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${student.name}`,
+              lastMessage: `Check recent assignments`,
+              timestamp: 'Recently',
+              unread: 0,
+              online: true,
+              type: 'student',
+            }));
+
+          convos = studentConvos;
+        }
+
+        setConversations(convos);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchConversations();
+  }, [user]);
+
+  // Optional: Fetch actual messages from backend if you implement (currently placeholder)
+  useEffect(() => {
+    if (selectedChat) {
+      // You can implement API call to get messages by conversation id
+      setMessages([]);
     }
-  };
-
-  // Role-specific messages
-  const getMessages = () => {
-    switch (user?.role) {
-      case 'student':
-        return [
-          {
-            id: 1,
-            senderId: 1,
-            senderName: 'Dr. Sarah Johnson',
-            content: "Hi! I wanted to discuss your recent calculus assignment. You showed excellent understanding of integration techniques.",
-            timestamp: new Date(Date.now() - 3600000),
-            type: 'text'
-          },
-          {
-            id: 2,
-            senderId: 'current',
-            senderName: 'You',
-            content: "Thank you, Dr. Johnson! I found the substitution method particularly challenging at first.",
-            timestamp: new Date(Date.now() - 3500000),
-            type: 'text'
-          },
-          {
-            id: 3,
-            senderId: 1,
-            senderName: 'Dr. Sarah Johnson',
-            content: "That's completely normal. Integration by substitution requires practice. Would you like me to provide some additional practice problems?",
-            timestamp: new Date(Date.now() - 3400000),
-            type: 'text'
-          },
-          {
-            id: 4,
-            senderId: 'current',
-            senderName: 'You',
-            content: "That would be great! I'm particularly struggling with trigonometric substitutions.",
-            timestamp: new Date(Date.now() - 3300000),
-            type: 'text'
-          },
-          {
-            id: 5,
-            senderId: 1,
-            senderName: 'Dr. Sarah Johnson',
-            content: "Perfect! I'll prepare a set of problems focusing on trigonometric substitutions. I'll send them to you by tomorrow.",
-            timestamp: new Date(Date.now() - 120000),
-            type: 'text'
-          },
-          {
-            id: 6,
-            senderId: 1,
-            senderName: 'Dr. Sarah Johnson',
-            content: "Great work on your calculus assignment!",
-            timestamp: new Date(Date.now() - 60000),
-            type: 'text'
-          }
-        ];
-
-      case 'teacher':
-        return [
-          {
-            id: 1,
-            senderId: 'current',
-            senderName: 'You',
-            content: "Good morning class! Don't forget that your calculus assignment is due this Friday. Please submit it through the portal.",
-            timestamp: new Date(Date.now() - 300000),
-            type: 'text'
-          },
-          {
-            id: 2,
-            senderId: 2,
-            senderName: 'Alex Chen',
-            content: "Dr. Johnson, I'm having trouble with problem #7. Could you provide some guidance?",
-            timestamp: new Date(Date.now() - 240000),
-            type: 'text'
-          },
-          {
-            id: 3,
-            senderId: 3,
-            senderName: 'Emma Wilson',
-            content: "Will there be a review session before the test?",
-            timestamp: new Date(Date.now() - 180000),
-            type: 'text'
-          },
-          {
-            id: 4,
-            senderId: 'current',
-            senderName: 'You',
-            content: "Yes Emma, I'll schedule a review session for Wednesday after school. Alex, I'll send you some additional resources for problem #7.",
-            timestamp: new Date(Date.now() - 120000),
-            type: 'text'
-          },
-          {
-            id: 5,
-            senderId: 4,
-            senderName: 'Sarah Kim',
-            content: "Thank you! That would be very helpful.",
-            timestamp: new Date(Date.now() - 60000),
-            type: 'text'
-          }
-        ];
-
-      case 'parent':
-        return [
-          {
-            id: 1,
-            senderId: 1,
-            senderName: 'Dr. Sarah Johnson',
-            content: "Hello! I wanted to update you on Alex's progress in mathematics. He's been doing exceptionally well this semester.",
-            timestamp: new Date(Date.now() - 3600000),
-            type: 'text'
-          },
-          {
-            id: 2,
-            senderId: 'current',
-            senderName: 'You',
-            content: "That's wonderful to hear! We've been working with him on his homework at home. Are there any areas where he could improve?",
-            timestamp: new Date(Date.now() - 3500000),
-            type: 'text'
-          },
-          {
-            id: 3,
-            senderId: 1,
-            senderName: 'Dr. Sarah Johnson',
-            content: "He's particularly strong in algebra and geometry. I'd recommend encouraging him to participate more in class discussions to build confidence.",
-            timestamp: new Date(Date.now() - 3400000),
-            type: 'text'
-          },
-          {
-            id: 4,
-            senderId: 'current',
-            senderName: 'You',
-            content: "We'll definitely encourage that. Should we consider any advanced math programs for next year?",
-            timestamp: new Date(Date.now() - 3300000),
-            type: 'text'
-          },
-          {
-            id: 5,
-            senderId: 1,
-            senderName: 'Dr. Sarah Johnson',
-            content: "Absolutely! I think Alex would benefit from the Advanced Placement Calculus program. I can provide more information about the requirements.",
-            timestamp: new Date(Date.now() - 120000),
-            type: 'text'
-          }
-        ];
-
-      default:
-        return [];
-    }
-  };
-
-  const conversations = getConversations();
-  const messages = getMessages();
+  }, [selectedChat]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, [messages]);
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
+    const newMsg = {
+      id: messages.length + 1,
+      senderId: 'current',
+      senderName: 'You',
+      content: newMessage,
+      timestamp: new Date(),
+      type: 'text',
+    };
+    setMessages([...messages, newMsg]);
     setNewMessage('');
   };
 
-  const filteredConversations = conversations.filter(conv =>
+  const filteredConversations = conversations.filter((conv) =>
     conv.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     conv.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const selectedConversation = conversations.find(conv => conv.id === selectedChat);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -501,46 +301,52 @@ const Messages: React.FC = () => {
 
         {/* Chat Area */}
         <div className="lg:col-span-2">
-          {selectedConversation ? (
+          {selectedChat ? (
             <Card className="h-full flex flex-col">
               {/* Chat Header */}
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="relative">
-                    <img
-                      src={selectedConversation.avatar}
-                      alt={selectedConversation.name}
-                      className="w-10 h-10 rounded-full"
-                    />
-                    {selectedConversation.online && (
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                      {selectedConversation.name}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {selectedConversation.online ? 'Online' : selectedConversation.role}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {user?.role !== 'parent' && (
-                    <>
+              {(() => {
+                const selectedConversation = conversations.find(conv => conv.id === selectedChat);
+                if (!selectedConversation) return null;
+                return (
+                  <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="relative">
+                        <img
+                          src={selectedConversation.avatar}
+                          alt={selectedConversation.name}
+                          className="w-10 h-10 rounded-full"
+                        />
+                        {selectedConversation.online && (
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">
+                          {selectedConversation.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {selectedConversation.online ? 'Online' : selectedConversation.role}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {user?.role !== 'parent' && (
+                        <>
+                          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                            <Phone className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                          </button>
+                          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                            <Video className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                          </button>
+                        </>
+                      )}
                       <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                        <Phone className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                        <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                       </button>
-                      <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                        <Video className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                      </button>
-                    </>
-                  )}
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                    <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                  </button>
-                </div>
-              </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Messages */}
               <div className="flex-1 p-4 overflow-y-auto space-y-4">

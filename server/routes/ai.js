@@ -5,17 +5,23 @@ import { User } from '../models/User.js';
 
 const router = express.Router();
 
+// Instantiate GeminiService once
+const gemini = new GeminiService("AIzaSyDaUE-XSSzeskiZ-1iwzxsg5w0Zaqi14G4");
+
 // Chat with Ilm AI
 router.post('/chat', authenticateToken, async (req, res) => {
   try {
     const { message, subject, context } = req.body;
-    
-    // Get user's learning rate and history (in real app, from database)
-    const user=req.user;
-    const learningRate = await User.findById(user.id).select('learningRate');
+
+    // Get user's learning rate from DB (you might already have it on req.user)
+    const user = req.user;
+    const userDoc = await User.findById(user.id).select('learningRate');
+    const learningRate = userDoc?.learningRate || 80;
+
+    // Example placeholder for chat history (replace with real data if needed)
     const chatHistory = [];
-    
-    const response = await GeminiService.generateResponse({
+
+    const response = await gemini.generateResponse({
       message,
       subject,
       learningRate,
@@ -42,8 +48,8 @@ router.post('/generate-content', authenticateToken, async (req, res) => {
     }
 
     const { topic, difficulty, contentType, targetAudience } = req.body;
-    
-    const content = await GeminiService.generateContent({
+
+    const content = await gemini.generateContent({
       topic,
       difficulty,
       contentType,
@@ -68,8 +74,8 @@ router.post('/analyze-performance', authenticateToken, async (req, res) => {
     }
 
     const { studentData, subject } = req.body;
-    
-    const analysis = await GeminiService.analyzePerformance({
+
+    const analysis = await gemini.analyzePerformance({
       studentData,
       subject
     });
