@@ -33,7 +33,7 @@ export const register = async (data: {
 export const login = async (data: {
   email: string;
   password: string;
-  role: 'student' | 'teacher';
+  role: 'student' | 'teacher' | 'parent';
 }) => {
   const res = await apiClient.post('/auth/login', data);
   return res.data;

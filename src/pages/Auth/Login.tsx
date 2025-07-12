@@ -1,28 +1,41 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { motion } from 'framer-motion';
-import { GraduationCap, Mail, Lock, User } from 'lucide-react';
-import Button from '../../components/UI/Button';
-import { toast } from 'react-hot-toast';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { motion } from "framer-motion";
+import { GraduationCap, Mail, Lock, User } from "lucide-react";
+import Button from "../../components/UI/Button";
+import { toast } from "react-hot-toast";
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState<{
     email: string;
     password: string;
-    role: 'student' | 'teacher';
+    role: "student" | "teacher" | "parent";
   }>({
-    email: '',
-    password: '',
-    role: 'student'
+    email: "",
+    password: "",
+    role: "student",
   });
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const roles = [
-    { value: 'student', label: 'Student', description: 'Access courses and track progress' },
-    { value: 'teacher', label: 'Teacher', description: 'Manage classes and create content' }
+    {
+      value: "student",
+      label: "Student",
+      description: "Access courses and track progress",
+    },
+    {
+      value: "teacher",
+      label: "Teacher",
+      description: "Manage classes and create content",
+    },
+    {
+      value: "parent",
+      label: "Parent",
+      description: "Monitor child's progress",
+    },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,12 +43,16 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const success = await login(formData.email, formData.password, formData.role);
+      const success = await login(
+        formData.email,
+        formData.password,
+        formData.role
+      );
       if (success) {
-        navigate('/dashboard');
+        navigate("/dashboard");
       }
     } catch (error) {
-      toast.error('Login failed. Please try again.');
+      toast.error("Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -57,8 +74,12 @@ const Login: React.FC = () => {
           >
             <GraduationCap className="w-8 h-8 text-white" />
           </motion.div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome Back</h2>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Sign in to your EduPlatform account</p>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Welcome Back
+          </h2>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Sign in to your EduPlatform account
+          </p>
         </div>
 
         <motion.div
@@ -76,24 +97,36 @@ const Login: React.FC = () => {
               <div className="grid grid-cols-1 gap-3">
                 {roles.map((role) => (
                   <label
-                    key={role.value}
+                    key={role?.value}
                     className={`relative flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
-                      formData.role === role.value
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/50'
-                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                      formData.role === role?.value
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/50"
+                        : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
                     }`}
                   >
                     <input
                       type="radio"
                       name="role"
-                      value={role.value}
-                      checked={formData.role === role.value}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value as 'student' | 'teacher' })}
+                      value={role?.value}
+                      checked={formData.role === role?.value}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          role: e.target.value as
+                            | "student"
+                            | "teacher"
+                            | "parent",
+                        })
+                      }
                     />
                     <User className="w-5 h-5 text-gray-500 mr-3" />
                     <div>
-                      <div className="font-medium text-gray-900 dark:text-white">{role.label}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{role.description}</div>
+                      <div className="font-medium text-gray-900 dark:text-white">
+                        {role?.label}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {role?.description}
+                      </div>
                     </div>
                   </label>
                 ))}
@@ -111,7 +144,9 @@ const Login: React.FC = () => {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   className="pl-10 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   placeholder="Enter your email"
                 />
@@ -129,7 +164,9 @@ const Login: React.FC = () => {
                   type="password"
                   required
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   className="pl-10 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   placeholder="Enter your password"
                 />
@@ -156,7 +193,7 @@ const Login: React.FC = () => {
 
             <div className="text-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                Don't have an account?{' '}
+                Don't have an account?{" "}
                 <Link
                   to="/register"
                   className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
