@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import {User} from "../models/User.js"; // Assuming you have a User model for student dat
 
 export class GeminiService {
   constructor(apiKey) {
@@ -58,14 +59,14 @@ export class GeminiService {
       throw new Error('Failed to generate AI content');
     }
   }
-  async analyzePerformance({ studentId, courseId }) {
+  async analyzePerformance({ studentId }) {
     try {
+      let x=await User.find({_id:studentId})
       const prompt = `
         You are Ilm, an AI performance analyst.
-
-        Analyze the performance of student ID ${studentId} in course ID ${courseId}.
+        Whose Grade in Machine Learning is C.all assignment completed
         Provide insights on strengths, weaknesses, and areas for improvement.
-      `;
+      `;
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       return response.text();

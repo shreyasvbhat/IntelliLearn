@@ -20,7 +20,7 @@ const userSchema = new Schema({
   // Student fields
   learningRate: { type: Number, default: 50 },
   enrolledCourses: [{ type: Schema.Types.ObjectId, ref: 'Course' }],
-  achievements: [{ type: String }],
+  achievements: [],
   progress: { type: Schema.Types.Mixed, default: {} },
 
   // Teacher fields
