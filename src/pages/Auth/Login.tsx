@@ -78,7 +78,7 @@ const Login: React.FC = () => {
             Welcome Back
           </h2>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Sign in to your EduPlatform account
+            Sign in to your IntelliLearn account
           </p>
         </div>
 

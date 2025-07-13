@@ -66,9 +66,9 @@ const DashboardRouter: React.FC = () => {
         
         {/* Shared Routes */}
         <Route path="/profile" element={<Profile />} />
-        <Route path="/messages" element={<Messages />} />
+        {/* <Route path="/messages" element={<Messages />} /> */}
         <Route path="/notifications" element={<Notifications />} />
-        <Route path="/settings" element={<div className="p-6"><h1 className="text-2xl font-bold">Settings (Coming Soon)</h1></div>} />
+        {/* <Route path="/settings" element={<div className="p-6"><h1 className="text-2xl font-bold">Settings (Coming Soon)</h1></div>} /> */}
         
         {/* Student Routes */}
         {user?.role === 'student' && (

@@ -66,7 +66,7 @@ const Register: React.FC = () => {
             <GraduationCap className="w-8 h-8 text-white" />
           </motion.div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Create Account</h2>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Join EduPlatform today</p>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Join IntelliLearn today</p>
         </div>
 
         <motion.div
