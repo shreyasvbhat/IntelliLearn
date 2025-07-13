@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Brain, Send, Mic, Image, BookOpen, TrendingUp, Lightbulb, Clock
 } from 'lucide-react';
+import parse from 'html-react-parser';
 import Card from '../../components/UI/Card';
 import Button from '../../components/UI/Button';
 import * as API from '../../api/APICalls';
@@ -60,47 +61,74 @@ const AITutor: React.FC = () => {
   };
 
   const handleSendMessage = async () => {
-  if (!inputMessage.trim()) return;
+    if (!inputMessage.trim()) return;
 
-  const userMessage = {
-    id: Date.now(),
-    type: 'user',
-    content: inputMessage,
-    timestamp: new Date(),
-    subject: selectedSubject
-  };
-
-  setMessages(prev => [...prev, userMessage]);
-  setInputMessage('');
-  setIsTyping(true);
-
-  try {
-    const res = await API.chatWithAI(
-      inputMessage,
-      selectedSubject,
-      {
-        message: inputMessage,
-        subject: selectedSubject,
-        context: ''
-      }
-    );
-    console.log('AI Response:', res);
-    const aiResponse = {
-      id: Date.now() + 1,
-      type: 'ai',
-      content: res.response,
+    const userMessage = {
+      id: Date.now(),
+      type: 'user',
+      content: inputMessage,
       timestamp: new Date(),
       subject: selectedSubject
     };
-    setMessages(prev => [...prev, aiResponse]);
-    setIsTyping(false);
 
-    // Removed fetchLearningStats(); since no API route exists
-  } catch (error) {
-    console.error('Error fetching AI response:', error);
-    setIsTyping(false);
-  }
-};
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsTyping(true);
+
+    try {
+      const res = await API.chatWithAI(
+        inputMessage,
+        selectedSubject,
+        {
+          message: inputMessage,
+          subject: selectedSubject,
+          context: ''
+        }
+      );
+      console.log('AI Response:', res);
+
+      // Extract and preserve HTML content from the response
+      let aiContent = '';
+      if (typeof res.response === 'string') {
+        // Simple string response - wrap in paragraph tags
+        aiContent = `<p>${res.response}</p>`;
+      } else if (res.response?.content?.content) {
+        // Full HTML content from Gemini
+        aiContent = res.response.content.content;
+      } else if (typeof res.response?.content === 'string') {
+        // Simple content object - wrap in paragraph tags
+        aiContent = `<p>${res.response.content}</p>`;
+      } else {
+        aiContent = '<p>I apologize, but I could not generate a proper response.</p>';
+      }
+
+      // Ensure content is wrapped in gemini-content div if it isn't already
+      if (!aiContent.includes('class="gemini-content"')) {
+        aiContent = `<div class="gemini-content">${aiContent}</div>`;
+      }
+
+      const aiResponse = {
+        id: Date.now() + 1,
+        type: 'ai',
+        content: aiContent,
+        timestamp: new Date(),
+        subject: selectedSubject
+      };
+      setMessages(prev => [...prev, aiResponse]);
+      setIsTyping(false);
+
+    } catch (error) {
+      console.error('Error fetching AI response:', error);
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        type: 'ai',
+        content: 'I apologize, but I encountered an error while processing your request.',
+        timestamp: new Date(),
+        subject: selectedSubject
+      }]);
+      setIsTyping(false);
+    }
+  };
 
 const handleQuickQuestion = (question: string) => {
   setInputMessage(question);
@@ -161,7 +189,21 @@ const handleQuickQuestion = (question: string) => {
                         <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Ilm</span>
                       </div>
                     )}
-                    <p className="text-sm">{message.content}</p>
+                    <div className={`
+                      text-sm prose prose-sm max-w-none
+                      ${message.type === 'user' ? 'prose-invert' : 'dark:prose-invert'}
+                      [&>h2]:text-lg [&>h2]:font-semibold [&>h2]:mb-2
+                      [&>p]:my-2 [&>p]:leading-relaxed
+                      [&>ul]:list-disc [&>ul]:pl-4 [&>ul]:my-2 [&>ul>li]:mb-1
+                      [&>ol]:list-decimal [&>ol]:pl-4 [&>ol]:my-2 [&>ol>li]:mb-1
+                      [&_strong]:font-semibold [&_strong]:text-inherit
+                      [&_em]:italic [&_em]:text-inherit
+                      [&_code]:font-mono [&_code]:text-sm [&_code]:bg-gray-100 [&_code]:dark:bg-gray-800 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded
+                      [&_blockquote]:border-l-4 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-2
+                      ${message.type === 'ai' ? '[&_.gemini-content]:space-y-4' : ''}
+                    `}>
+                      {parse(message.content)}
+                    </div>
                     <p className="text-xs opacity-70 mt-2">
                       {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
