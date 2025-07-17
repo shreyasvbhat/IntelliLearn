@@ -136,7 +136,7 @@ export const getAllCourses = async () => {
 };
 
 export const submitAssignment = async (courseId:any, assignmentId:any) => {
-  const res = await apiClient.post(`/courses/${courseId}/assignments/${assignmentId}/submit`);
+  const res = await apiClient.post(`/courses/submit/${assignmentId}`);
   return res.data;
 };
 

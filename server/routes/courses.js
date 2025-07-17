@@ -2,6 +2,7 @@ import express from "express";
 import { authenticateToken } from "../middleware/auth.js";
 import { Course } from "../models/Course.js";
 import { User } from "../models/User.js"; // Assuming you have a User model for student data
+import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
 
@@ -69,39 +70,23 @@ router.get("/:id", authenticateToken, async (req, res) => {
 });
 //submit assignments
 router.post(
-  "/:courseId/assignments/:assignmentId/submit",
+  "/submit/:id",
   authenticateToken,
   async (req, res) => {
     try {
-      const { courseId, assignmentId } = req.params;
+      const assignmentId=req.params.id;
+      const id=req.user._id;
+      let user=await User.findOne({_id:id});
+      user.achievements.map((e)=>{
+        if(e.assignmentId===assignmentId){
+          e.status="complete"
+          user.learningRate=Math.min(100,user.learningRate+1);
+        }
+      })
 
-      const course = await Course.findById(courseId);
-      if (!course) {
-        return res.status(404).json({ error: "Course not found" });
-      }
-
-      // Check student access
-      if (
-        req.user.role !== "student" ||
-        !course.students.includes(req.user._id)
-      ) {
-        return res.status(403).json({ error: "Access denied" });
-      }
-
-      // Find assignment
-      const assignment = course.assignments.id(assignmentId);
-      if (!assignment) {
-        return res.status(404).json({ error: "Assignment not found" });
-      }
-
-      // Update assignment submission details
-      assignment.status = "submitted";
-      assignment.submittedDate = new Date();
-      assignment.attempts = (assignment.attempts || 0) + 1;
-
-      await course.save();
-
-      res.json({ message: "Assignment submitted successfully", assignment });
+      user.markModified('achievements'); 
+      await user.save();
+      res.json({ message: "Assignment submitted successfully"});
     } catch (error) {
       console.error("Submit assignment error:", error);
       res.status(500).json({ error: "Failed to submit assignment" });
@@ -148,6 +133,7 @@ router.post("/:id/add-assignment", authenticateToken, async (req, res) => {
   try {
     const courseId = req.params.id;
     const { title, description, dueDate, points } = req.body;
+    const id = uuidv4();
 
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ error: "Course not found" });
@@ -158,6 +144,7 @@ router.post("/:id/add-assignment", authenticateToken, async (req, res) => {
         .json({ error: "Only the course teacher can add assignments" });
 
     const newAssignment = {
+      id,
       title,
       description,
       dueDate,
@@ -169,12 +156,20 @@ router.post("/:id/add-assignment", authenticateToken, async (req, res) => {
 
     let x = await User.find({ _id: { $in: course.students } });
     console.log(x);
+    let y = await Course.find({_id:courseId});
+    if (!y){
+      throw new Error("Course invalid");
+    }
+
     x.forEach((student) => {
       student.achievements.push({
-        courseId: course._id,
-        assignmentId: newAssignment._id,
+        title:title,
+        subject:y.subject,
+        assignmentId:id,
+        description:description,
+        dueDate:dueDate,
         status: "pending",
-        attempts: 0,
+        attempts: 1,
       });
       student.save();
     });

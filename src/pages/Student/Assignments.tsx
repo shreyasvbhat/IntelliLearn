@@ -18,18 +18,19 @@ const Assignments: React.FC = () => {
   useEffect(() => {
     const fetchAssignments = async () => {
       try {
-        if (!courseId) throw new Error('Course ID is undefined');
-        const course = await API.getCourseById(courseId);
-        setAssignments(course.assignments || []);
+       // if (!courseId) throw new Error('Course ID is undefined');
+        const profile = await API.getProfile();
+        console.log(profile.achievements);
+        setAssignments(profile.achievements || []);
       } catch (error) {
         console.error('Failed to fetch course assignments:', error);
       }
     };
 
-    if (courseId) {
-      fetchAssignments();
-    }
-  }, [courseId]);
+
+    fetchAssignments();
+    
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -53,12 +54,12 @@ const Assignments: React.FC = () => {
     }
   };
 
-  const filteredAssignments = assignments.filter(assignment => {
-    const matchesFilter = filter === 'all' || assignment.status === filter;
-    const matchesSearch = assignment.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          assignment.subject?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  // const filteredAssignments = assignments.filter(assignment:any => {
+  //   const matchesFilter = filter === 'all' || assignment.status === filter;
+  //   const matchesSearch = assignment.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //                         assignment.subject?.toLowerCase().includes(searchTerm.toLowerCase());
+  //   return matchesFilter && matchesSearch;
+  // });
 
   const handleSubmit = async (assignmentId: string) => {
     try {
@@ -98,7 +99,6 @@ const Assignments: React.FC = () => {
               type="text"
               placeholder="Search assignments..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
@@ -122,7 +122,7 @@ const Assignments: React.FC = () => {
 
       {/* Assignments List */}
       <div className="space-y-4">
-        {filteredAssignments.map((assignment, index) => (
+        {assignments.map((assignment, index) => (
           <motion.div
             key={assignment._id}
             initial={{ opacity: 0, y: 20 }}
@@ -135,7 +135,7 @@ const Assignments: React.FC = () => {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{assignment.title}</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{assignment.subject}</p>
+                      
                     </div>
                     <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(assignment.status)}`}>
                       {getStatusIcon(assignment.status)}
@@ -165,17 +165,14 @@ const Assignments: React.FC = () => {
                     <div>
                       <p className="text-gray-500 dark:text-gray-400">Points</p>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {assignment.score ? `${assignment.score}/${assignment.points}` : assignment.points}
+                        10
                       </p>
-                      {assignment.score && (
-                        <p className="text-xs text-gray-500">{Math.round((assignment.score / assignment.points) * 100)}%</p>
-                      )}
                     </div>
 
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">Attempts</p>
+                      <p className="text-gray-500 dark:text-gray-400">Max Attempts</p>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {assignment.attempts}/{assignment.maxAttempts}
+                        {assignment.attempts}
                       </p>
                     </div>
                   </div>
@@ -207,7 +204,7 @@ const Assignments: React.FC = () => {
 
                 <div className="mt-4 lg:mt-0 lg:ml-6 flex flex-col space-y-2">
                   {assignment.status === 'pending' && (
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => handleSubmit(assignment._id)}>
+                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => handleSubmit(assignment.assignmentId)}>
                       <Upload className="w-4 h-4 mr-1" />
                       Submit
                     </Button>

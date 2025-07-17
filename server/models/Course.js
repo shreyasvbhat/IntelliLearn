@@ -15,10 +15,11 @@ const courseSchema = new Schema({
   }],
   assignments: [{ 
     type: new Schema({
+      id: {type:String},
       title: { type: String },
       description: { type: String },
       dueDate: { type: Date },
-    }, { _id: false })
+    })
   }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
