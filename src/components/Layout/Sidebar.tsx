@@ -32,9 +32,9 @@ const Sidebar: React.FC = () => {
     const commonItems = [
       { to: '/dashboard', icon: Home, label: 'Dashboard' },
       { to: '/profile', icon: User, label: 'Profile' },
-      { to: '/messages', icon: MessageCircle, label: 'Messages' },
-      { to: '/notifications', icon: Bell, label: 'Notifications' },
-      { to: '/settings', icon: Settings, label: 'Settings' }
+      ...(user?.role !== "parent"
+      ? [{ to: '/notifications', icon: Bell, label: 'Notifications' }]
+      : [])
     ];
 
     switch (user?.role) {
@@ -65,10 +65,6 @@ const Sidebar: React.FC = () => {
       case 'parent':
         return [
           { to: '/dashboard', icon: Home, label: 'Dashboard' },
-          { to: '/child-progress', icon: TrendingUp, label: 'Child Progress' },
-          { to: '/attendance', icon: Calendar, label: 'Attendance' },
-          { to: '/reports', icon: FileText, label: 'Reports' },
-          { to: '/teacher-communication', icon: MessageCircle, label: 'Teachers' },
           ...commonItems.slice(1)
         ];
       
