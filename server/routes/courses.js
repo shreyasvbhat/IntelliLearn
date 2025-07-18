@@ -115,7 +115,7 @@ router.post("/:id/add-student", authenticateToken, async (req, res) => {
       x.courses.push(courseId);
       await x.save(); // Assuming you have a User model to update the student's courses
 
-      let y = await User.find({ _id: course.teacherId });
+      let y = await User.findById(course.teacherId);
       y.students.push(studentId);
       await y.save(); // Update the teacher's students list
     }

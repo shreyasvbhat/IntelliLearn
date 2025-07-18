@@ -56,8 +56,8 @@ const Sidebar: React.FC = () => {
           { to: '/my-classes', icon: Users, label: 'My Classes' },
           { to: '/course-management', icon: BookOpen, label: 'Courses' },
           { to: '/analytics', icon: BarChart3, label: 'Analytics' },
-          { to: '/assignments', icon: FileText, label: 'Assignments' },
-          { to: '/calendar', icon: Calendar, label: 'Schedule' },
+          // { to: '/assignments', icon: FileText, label: 'Assignments' },
+          // { to: '/calendar', icon: Calendar, label: 'Schedule' },
           { to: '/ai-content', icon: GraduationCap, label: 'AI Content' },
           ...commonItems.slice(1)
         ];

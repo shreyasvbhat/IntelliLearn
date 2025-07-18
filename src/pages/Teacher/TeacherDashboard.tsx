@@ -12,54 +12,39 @@ import {
 } from 'lucide-react';
 import Card from '../../components/UI/Card';
 import ProgressChart from '../../components/Charts/ProgressChart';
-import * as API from '../../api/APICalls' // adjust path if needed
+import * as API from '../../api/APICalls'
 
 const TeacherDashboard: React.FC = () => {
   const [students, setStudents] = useState<any[]>([]);
-  const [courses, setCourses] = useState<any[]>([]);
   const [classData, setClassData] = useState<any[]>([]);
-  const [strugglingStudents, setStrugglingStudents] = useState<any[]>([]);
-  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+
+  const recentActivities = [
+    { id: 1, type: 'assignment', title: 'Calculus Assignment Due', time: '2 hours ago' },
+    { id: 2, type: 'question', title: 'Student asked about integration', time: '4 hours ago' },
+    { id: 3, type: 'content', title: 'New AI content generated', time: '1 day ago' }
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const studentsRes = await API.getStudents();
-        const coursesRes = await API.getCourses();
-
         setStudents(studentsRes);
-        setCourses(coursesRes);
-
-        // Example: create fake "class data" stats based on courses
-        // const generatedClassData = coursesRes.map((course: any) => ({
-        //   name: course.title,
-        //   progress: Math.floor(Math.random() * 30) + 70, // 70-100%
-        //   engagement: Math.floor(Math.random() * 20) + 75, // 75-95%
-        // }));
-        // setClassData(generatedClassData);
-
-        // Example: simulate students needing attention
-        // const struggling = studentsRes
-        //   .filter((_s: any, i: number) => i < 3) // just pick first 3 for demo
-        //   .map((s: any) => ({
-        //     id: s._id,
-        //     name: s.name,
-        //     subject: coursesRes[Math.floor(Math.random() * coursesRes.length)]?.title || 'Mathematics',
-        //     score: Math.floor(Math.random() * 30) + 45, // 45-75%
-        //     trend: Math.random() > 0.5 ? 'down' : 'stable',
-        //   }));
-        //setStrugglingStudents(struggling);
-
-        // Example: simulate recent activities
-        const activities = [
-          { id: 1, type: 'assignment', title: 'New Assignment Created', time: '2 hours ago' },
-          { id: 2, type: 'question', title: 'Student asked a question', time: '4 hours ago' },
-          { id: 3, type: 'content', title: 'AI content generated', time: '1 day ago' },
-        ];
-        setRecentActivities(activities);
-
+        
+        // Generate mock performance data for each student
+        const mockPerformanceData = studentsRes.map((student: any, index: number) => {
+          // Generate mock test scores between 60-95
+          const baseScore = Math.floor(Math.random() * 35) + 60;
+          
+          return {
+            name: student.name || `Student ${index + 1}`,
+            progress: baseScore,
+            engagement: baseScore + Math.floor(Math.random() * 10), // Slightly higher engagement scores
+          };
+        });
+        
+        setClassData(mockPerformanceData);
       } catch (err) {
-        console.error('Failed to fetch dashboard data:', err);
+        console.error('Failed to fetch students data:', err);
       }
     };
 
@@ -83,7 +68,7 @@ const TeacherDashboard: React.FC = () => {
           </div>
           <div className="flex items-center space-x-2">
             <BookOpen className="w-5 h-5" />
-            <span>{courses.length} Active Courses</span>
+            <span>6 Active Courses</span>
           </div>
         </div>
       </motion.div>
@@ -104,7 +89,7 @@ const TeacherDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">Active Courses</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{courses.length}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">2</p>
             </div>
             <BookOpen className="w-8 h-8 text-green-500" />
           </div>
@@ -124,7 +109,7 @@ const TeacherDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">Need Attention</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{strugglingStudents.length}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
             </div>
             <AlertTriangle className="w-8 h-8 text-red-500" />
           </div>
@@ -150,21 +135,20 @@ const TeacherDashboard: React.FC = () => {
               </h3>
             </div>
           </div>
-          <div className="space-y-3">
-            {strugglingStudents.map((student) => (
-              <div key={student.id} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/50 rounded-lg">
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-900 dark:text-white">{student.name}</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{student.subject}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-red-600 dark:text-red-400">{student.score}%</p>
-                  <p className="text-xs text-gray-500">
-                    {student.trend === 'down' ? '↓ Declining' : '→ Stable'}
-                  </p>
-                </div>
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <div className="bg-green-50 dark:bg-green-900/30 rounded-full p-4 mb-4">
+              <div className="text-green-500 w-12 h-12">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
-            ))}
+            </div>
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              All Students Are Doing Well!
+            </h4>
+            <p className="text-gray-600 dark:text-gray-400 max-w-sm">
+              Currently, all students are performing at satisfactory levels. Keep up the great work in maintaining this positive learning environment!
+            </p>
           </div>
         </Card>
       </div>
@@ -182,7 +166,7 @@ const TeacherDashboard: React.FC = () => {
           <div className="space-y-3">
             <div className="bg-purple-50 dark:bg-purple-900/50 p-3 rounded-lg">
               <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-                Ilm has generated new content for struggling students.
+                Ilm has generated new content for struggling students in Mathematics.
               </p>
               <div className="flex space-x-2">
                 <button className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700">

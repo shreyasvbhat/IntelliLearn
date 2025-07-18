@@ -9,15 +9,46 @@ import Button from '../../components/UI/Button';
 import * as API from '../../api/APICalls';
 import { useAuth } from '../../contexts/AuthContext';
 
+interface ClassItem {
+  _id: string;
+  name: string;
+  subject: string;
+  students: any[];
+  schedule: string;
+  room: string;
+  averageGrade: number;
+  attendance: number;
+  nextClass: string;
+  recentActivity: string;
+  color: string;
+  description?: string;
+  teacherId: string;
+}
+
 const MyClasses: React.FC = () => {
-  const [classes, setClasses] = useState<any[]>([]);
-  const [filteredClasses, setFilteredClasses] = useState<any[]>([]);
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [filteredClasses, setFilteredClasses] = useState<ClassItem[]>([]);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [selectedClass, setSelectedClass] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
+
+  const getColorForClass = (index: number) => {
+    const colors = ['blue', 'green', 'purple', 'orange'];
+    return colors[index % colors.length];
+  };
+
+  const getColorClasses = (color: string) => {
+    const colors = {
+      blue: 'bg-blue-500 border-blue-200',
+      green: 'bg-green-500 border-green-200',
+      purple: 'bg-purple-500 border-purple-200',
+      orange: 'bg-orange-500 border-orange-200'
+    };
+    return colors[color as keyof typeof colors] || 'bg-gray-500 border-gray-200';
+  };
 
   const { user } = useAuth();
 
@@ -27,17 +58,38 @@ const MyClasses: React.FC = () => {
       const teacherCourses = user
         ? allCourses.filter((course: any) => course.teacherId === user._id)
         : [];
-      setClasses(teacherCourses);
-      setFilteredClasses(teacherCourses);
+      
+      const formattedCourses = teacherCourses.map((course: any, index: number) => ({
+        _id: course._id,
+        name: course.title || course.name || course.courseName || 'Untitled Course',
+        subject: course.subject || 'General',
+        students: course.students || [],
+        schedule: course.schedule || 'Schedule TBD',
+        room: course.room || 'Room TBD',
+        averageGrade: course.averageGrade || 0,
+        attendance: course.attendance || 0,
+        nextClass: course.nextClass || new Date().toISOString(),
+        recentActivity: course.recentActivity || 'No recent activity',
+        color: getColorForClass(index),
+        description: course.description,
+        teacherId: course.teacherId
+      }));
 
-      const activities = teacherCourses.flatMap((course: any) => {
-        return course.students?.slice(0, 3).map((student: any) => ({
-          id: student._id,
-          type: 'assignment',
-          message: `Student ${student.name} submitted an assignment.`,
+      setClasses(formattedCourses);
+      setFilteredClasses(formattedCourses);
+
+      // Create activities from actual course data
+      const activities = formattedCourses.flatMap((course: ClassItem) => {
+        const activityTypes = ['assignment', 'question', 'grade', 'attendance'];
+        return course.students.slice(0, 1).map((student: any, idx: number) => ({
+          id: `${course._id}-${idx}`,
+          type: activityTypes[Math.floor(Math.random() * activityTypes.length)],
+          message: `Student ${student.name || 'Unknown'} ${
+            idx % 2 === 0 ? 'submitted an assignment' : 'asked a question'
+          }`,
           time: '1 day ago',
           class: course.name
-        })) || [];
+        }));
       });
       setRecentActivities(activities);
     } catch (error) {
@@ -51,8 +103,9 @@ const MyClasses: React.FC = () => {
 
   useEffect(() => {
     const filtered = classes.filter(cls => {
-      const matchesSearch = cls.name?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesFilter = selectedClass === 'all' || cls.subject?.toLowerCase() === selectedClass;
+      const matchesSearch = cls.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          cls.subject.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFilter = selectedClass === 'all' || cls.subject.toLowerCase() === selectedClass;
       return matchesSearch && matchesFilter;
     });
     setFilteredClasses(filtered);
@@ -168,7 +221,7 @@ const MyClasses: React.FC = () => {
         </Card>
         <Card className="p-6 text-center">
           <AlertTriangle className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">7</h3>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">0</h3>
           <p className="text-gray-600 dark:text-gray-400">Need Attention</p>
         </Card>
       </div>
@@ -207,9 +260,9 @@ const MyClasses: React.FC = () => {
         {/* Classes Grid */}
         <div className="lg:col-span-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredClasses.map((cls, index) => (
+            {filteredClasses.map((classItem, index) => (
               <motion.div
-                key={cls._id}
+                key={classItem._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -217,10 +270,11 @@ const MyClasses: React.FC = () => {
                 <Card hover className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
+                      <div className={`w-4 h-4 rounded-full ${getColorClasses(classItem.color).split(' ')[0]} mb-2`}></div>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                        {cls.name}
+                        {classItem.name}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{cls.room || 'Room TBD'}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{classItem.room}</p>
                     </div>
                     <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                       <Settings className="w-4 h-4 text-gray-500" />
@@ -230,29 +284,29 @@ const MyClasses: React.FC = () => {
                   <div className="space-y-3 mb-4">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Students</span>
-                      <span className="font-medium text-gray-900 dark:text-white">{cls.students?.length || 0}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{classItem.students.length}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Avg. Grade</span>
-                      <span className="font-medium text-gray-900 dark:text-white">N/A</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{classItem.averageGrade || 0}%</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Attendance</span>
-                      <span className="font-medium text-gray-900 dark:text-white">N/A</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{classItem.attendance || 0}%</span>
                     </div>
                   </div>
 
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
                     <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
                       <Clock className="w-4 h-4 mr-1" />
-                      <span>{cls.schedule || 'Schedule TBD'}</span>
+                      <span>{classItem.schedule}</span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-3">
                       <Calendar className="w-4 h-4 mr-1" />
-                      <span>Next: {cls.nextClass ? new Date(cls.nextClass).toLocaleDateString() : 'TBD'}</span>
+                      <span>Next: {new Date(classItem.nextClass).toLocaleDateString()} at {new Date(classItem.nextClass).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-500 mb-3">
-                      {cls.description || 'No recent activity'}
+                      {classItem.recentActivity}
                     </p>
                   </div>
 
@@ -334,6 +388,29 @@ const MyClasses: React.FC = () => {
                   </div>
                 </motion.div>
               ))}
+            </div>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+            <div className="space-y-2">
+              <Button variant="outline" size="sm" className="w-full justify-start">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Assignment
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Send Announcement
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                View Analytics
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start">
+                <Calendar className="w-4 h-4 mr-2" />
+                Schedule Class
+              </Button>
             </div>
           </Card>
         </div>

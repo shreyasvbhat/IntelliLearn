@@ -16,6 +16,8 @@ import Card from '../../components/UI/Card';
 import Button from '../../components/UI/Button';
 import * as API from '../../api/APICalls';
 import { useAuth } from '../../contexts/AuthContext';
+import ml from "../../public/ML.jpg";
+import web from "../../public/we.jpeg";
 
 const Courses: React.FC = () => {
   const [courses, setCourses] = useState<any[]>([]);
@@ -116,7 +118,7 @@ const Courses: React.FC = () => {
             <Card hover className="overflow-hidden">
               <div className="relative">
                 <img
-                  src={course.thumbnail || 'https://via.placeholder.com/400x300?text=Course'}
+                  src={course.title === 'Machine Learning' ? ml : web}
                   alt={course.title}
                   className="w-full h-48 object-cover"
                 />
